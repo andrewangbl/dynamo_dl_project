@@ -1,0 +1,24 @@
+name: dynamo-pretrain
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - the_well
+    - torchvision
+
+    - einops
+    - accelerate
+    - hydra-core
+    - omegaconf
+
+    - wandb
+    - tqdm
+    - prettytable
+    - scikit-learn
+
+    - matplotlib
+    - pandas
+    - ipython
+    - ipdb
