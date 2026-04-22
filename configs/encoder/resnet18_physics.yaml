@@ -1,0 +1,5 @@
+_target_: models.encoder.resnet_physics.resnet18_physics
+in_channels: 11
+output_dim: 512       # fixed for resnet18; MUST match projector.input_dim and ssl.feature_dim
+unit_norm: False
+input_norm: True      # non-affine BN over 11 input channels -> learned per-channel z-score

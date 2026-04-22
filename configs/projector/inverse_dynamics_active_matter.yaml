@@ -1,0 +1,12 @@
+_target_: models.projector.inverse_dynamics.InverseDynamicsProjector
+window_size: ${window_size}
+input_dim: ${encoder.output_dim}
+n_layer: 4
+n_head: 4
+n_embd: 128
+# Latent "action" dim z. Active matter's governing parameters (alpha, zeta) + some
+# inferred state channels are low-dim, so a small bottleneck is appropriate.
+# Rule of thumb from DynaMo: set z to the estimated underlying DoF. We use 16 here;
+# worth ablating {8, 16, 32}.
+output_dim: 16
+dropout: 0.0

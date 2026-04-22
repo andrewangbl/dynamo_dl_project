@@ -1,0 +1,55 @@
+defaults:
+  - _self_
+  - encoder: resnet18_physics
+  - projector: inverse_dynamics_active_matter
+  - ssl: dynamo_active_matter
+  - env: active_matter
+  - env_vars: env_vars
+
+# Dataset / window details
+subset_fraction: null
+train_fraction: 1.0            # unused by train_thewell (official split)
+batch_size: 16                 # ~9GB VRAM at window=16, 224^2, 11ch (fits T4/L4 16GB)
+num_workers: 12                # persistent, with prefetch_factor=4 via train_thewell.py
+window_size: 16                # == num_frames; matches reference's F=16
+stride_train: null             # null -> non-overlapping (stride = window_size)
+stride_val: null
+noise_std: 0.0                 # optional Gaussian augmentation (reference default)
+goal_conditional: null
+goal_seq_len: 0
+min_future_sep: 0
+num_extra_predicted_actions: 0
+
+# Training details
+ssl_lr: 1e-4
+ssl_weight_decay: 0.0
+betas:
+  - 0.9
+  - 0.999
+clip_grad_norm: 1.0
+seed: 42
+timeout_seconds: 18000
+
+sync_bn: True
+use_lr_scheduling: True
+warmup_epochs: 5
+num_epochs: 40
+
+save_every_epochs: 10
+
+# Eval config
+eval_offline: True             # base Workspace returns {"loss": 0}; real probe is TODO
+
+# Wandb config
+project: dynamo-active-matter
+experiment: thewell_dynamo
+
+hydra:
+  job:
+    override_dirname: ${experiment}
+    chdir: False
+  run:
+    dir: ./exp_local/${now:%Y.%m.%d}/${now:%H%M%S}_${experiment}
+  sweep:
+    dir: ./exp_local/${now:%Y.%m.%d}/sweep_${now:%H%M%S}_${experiment}
+    subdir: ${hydra.job.num}

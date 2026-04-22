@@ -1,4 +1,4 @@
-dataset_root: /PATH/TO/DATASET/ROOT  # e.g. set this to the unzipped directory of all datasets
+dataset_root: /home_shared/grail_andre/Datasets/the_well/datasets
 
 datasets:
     pusht: ${env_vars.dataset_root}/pusht_dataset
@@ -6,3 +6,5 @@ datasets:
     libero: ${env_vars.dataset_root}/libero_dataset
     block_push: ${env_vars.dataset_root}/block_push_dataset
     your_trajectory_dataset: YOUR_DATASET_PATH
+    # Per-dataset directory that contains `data/<split>/*.hdf5`.
+    active_matter: ${env_vars.dataset_root}/active_matter

@@ -1,0 +1,26 @@
+_target_: models.ssl.dynamo.DynaMoSSL
+window_size: ${window_size}
+feature_dim: ${encoder.output_dim}
+projection_dim: ${projector.output_dim}
+n_layer: 4
+n_head: 4
+n_embd: 128
+
+dropout: 0.0
+# DynaMo's off-diagonal covariance regularizer is the only force preventing
+# representation collapse under the cosine-similarity dynamics loss. At 0.04
+# (the original DynaMo default tuned for visuomotor robotics data) we observed
+# near-instant collapse on active_matter: obs_enc mean-per-dim / std ~= 5.
+# Physical-field inputs are low-entropy compared to robot camera RGB, so we
+# need a much stronger penalty. 1.0 is a starting point; worth ablating 0.25/1/4.
+covariance_reg_coef: 1.0
+dynamics_loss_coef: 1.0
+
+ema_beta: 0.99
+beta_scheduling: True
+projector_use_ema: True
+
+lr: ${ssl_lr}
+weight_decay: ${ssl_weight_decay}
+betas: ${betas}
+separate_single_views: True

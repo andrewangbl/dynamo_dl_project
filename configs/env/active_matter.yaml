@@ -1,0 +1,23 @@
+# The Well -- active_matter. Single-view (V=1), 11 physical channels.
+#
+# Each dataset __getitem__ returns one window of `window_size` frames already
+# in DynaMo's (T, V=1, C=11, H, W) layout, so train_thewell.py SKIPS the
+# TrajectorySlicerDataset wrapper.
+
+views: 1
+
+workspace:
+  _target_: workspaces.base.Workspace
+
+# Train split. Valid split is built in train_thewell.py with matching kwargs.
+dataset:
+  _target_: datasets.active_matter.ActiveMatterWindowDataset
+  data_dir: ${env_vars.datasets.active_matter}
+  num_frames: ${window_size}
+  split: train
+  resolution: 224
+  stride: ${stride_train}        # null -> falls back to num_frames (non-overlapping)
+  noise_std: ${noise_std}
+
+# train_thewell.py reads env.stride_val when constructing the valid split.
+stride_val: ${stride_val}
