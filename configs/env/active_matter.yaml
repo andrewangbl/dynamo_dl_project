@@ -7,7 +7,7 @@
 views: 1
 
 workspace:
-  _target_: workspaces.base.Workspace
+  _target_: workspaces.active_matter.ActiveMatterWorkspace
 
 # Train split. Valid split is built in train_thewell.py with matching kwargs.
 dataset:

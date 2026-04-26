@@ -70,6 +70,18 @@ class Trainer:
 
         self.log_components = OrderedDict()
         self.epoch = 0
+        self.eval_loss = 0.0
+
+    def _should_run_eval(self) -> bool:
+        """Run full eval (offline probe + val forward) every N completed epochs, and on the last."""
+        n = int(OmegaConf.select(self.cfg, "eval_every_n_epochs", default=1))
+        if n <= 1:
+            return True
+        if (self.epoch + 1) % n == 0:
+            return True
+        if (self.epoch + 1) == int(self.cfg.num_epochs):
+            return True
+        return False
 
     def _init_tracker(self, cfg):
         wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
@@ -290,7 +302,8 @@ class Trainer:
         for epoch in self.train_iterator:
             self.epoch = epoch
             self.train()
-            self.eval()
+            if self._should_run_eval():
+                self.eval()
             self.flush_log(step=self.epoch, iterator=self.train_iterator)
             if (self.epoch + 1) % self.cfg.save_every_epochs == 0:
                 self.save_snapshot()

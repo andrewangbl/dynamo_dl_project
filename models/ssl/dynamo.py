@@ -21,6 +21,20 @@ def off_diag_cov_loss(x: torch.Tensor) -> torch.Tensor:
     return off_diag(cov).square().mean()
 
 
+# https://github.com/facebookresearch/vicreg/blob/main/main_vicreg.py#L237
+# Per-dimension variance hinge loss from VICReg. Penalises any feature dim
+# whose std along the batch-time axis drops below `gamma`. Off-diag cov alone
+# vanishes under full collapse (variances ~ 0 => covariances ~ 0), so we need
+# an explicit per-dim lower bound on std to keep the representation non-trivial
+# on low-entropy physical inputs (active_matter).
+def variance_reg_loss(
+    x: torch.Tensor, gamma: float = 1.0, eps: float = 1e-4
+) -> torch.Tensor:
+    x_flat = einops.rearrange(x, "... E -> (...) E")
+    std = torch.sqrt(x_flat.var(dim=0) + eps)
+    return torch.mean(torch.relu(gamma - std))
+
+
 accelerator = Accelerator()
 
 
@@ -37,6 +51,8 @@ class DynaMoSSL(AbstractSSL):
         n_embd: int,
         dropout: float = 0.0,
         covariance_reg_coef: float = 0.04,
+        variance_reg_coef: float = 0.0,
+        variance_reg_gamma: float = 1.0,
         dynamics_loss_coef: float = 1.0,
         ema_beta: Optional[float] = None,  # None for SimSiam; float for EMA encoder
         beta_scheduling: bool = False,
@@ -70,6 +86,8 @@ class DynaMoSSL(AbstractSSL):
             self.forward_dynamics_optimizer,
         )
         self.covariance_reg_coef = covariance_reg_coef
+        self.variance_reg_coef = variance_reg_coef
+        self.variance_reg_gamma = variance_reg_gamma
         self.dynamics_loss_coef = dynamics_loss_coef
         self.ema_beta = ema_beta
         self.beta_scheduling = beta_scheduling
@@ -101,14 +119,16 @@ class DynaMoSSL(AbstractSSL):
             obs_proj = self.projector(obs_enc)
 
         covariance_loss = self._covariance_reg_loss(obs_enc)
+        variance_loss = self._variance_reg_loss(obs_enc)
         dynamics_loss, dynamics_loss_components = self._forward_dyn_loss(
             obs_enc, obs_proj, obs_target, self.separate_single_views
         )
-        total_loss = dynamics_loss + covariance_loss
+        total_loss = dynamics_loss + covariance_loss + variance_loss
         loss_components = {
             "total_loss": total_loss,
             **dynamics_loss_components,
             "covariance_loss": covariance_loss,
+            "variance_loss": variance_loss,
         }
         return obs_enc, obs_proj, total_loss, loss_components
 
@@ -170,6 +190,12 @@ class DynaMoSSL(AbstractSSL):
     def _covariance_reg_loss(self, obs_enc: torch.Tensor):
         loss = off_diag_cov_loss(obs_enc)
         return loss * self.covariance_reg_coef
+
+    def _variance_reg_loss(self, obs_enc: torch.Tensor):
+        if self.variance_reg_coef == 0.0:
+            return torch.zeros((), device=obs_enc.device)
+        loss = variance_reg_loss(obs_enc, gamma=self.variance_reg_gamma)
+        return loss * self.variance_reg_coef
 
     def adjust_beta(self, epoch: int, max_epoch: int):
         if (self.ema_beta is None) or not self.beta_scheduling or (max_epoch == 0):

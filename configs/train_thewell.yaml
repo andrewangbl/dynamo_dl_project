@@ -33,12 +33,18 @@ timeout_seconds: 18000
 sync_bn: True
 use_lr_scheduling: True
 warmup_epochs: 5
-num_epochs: 40
+num_epochs: 100
 
-save_every_epochs: 10
+save_every_epochs: 20
 
 # Eval config
-eval_offline: True             # base Workspace returns {"loss": 0}; real probe is TODO
+eval_every_n_epochs: 50        # 1 = every epoch; N = end of every Nth epoch + final epoch
+eval_offline: True             # ActiveMatterWorkspace runs Ridge+kNN on (alpha, zeta)
+# Downstream-probe hyperparams (consumed by workspaces.active_matter.ActiveMatterWorkspace)
+probe_ridge_alpha: 1.0         # L2 strength for sklearn.linear_model.Ridge
+probe_knn_k: 5                 # neighbors in cosine kNN regression
+probe_batch_size: 64           # feature-extraction batch size
+probe_num_workers: 4
 
 # Wandb config
 project: dynamo-active-matter
